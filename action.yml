@@ -1,0 +1,10 @@
+name: 'Bld github action'
+description: 'Run Bld pipelines from github workflows'
+inputs:
+  pipeline:
+    description: 'The bld pipeline to run'
+    required: true
+    default: 'default.yaml'
+runs:
+  using: 'node18'
+  main: 'dist/index.js'
