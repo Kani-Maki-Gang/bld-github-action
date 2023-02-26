@@ -1,0 +1,8 @@
+version: 1
+runs_on: ubuntu
+name: Sample pipeline for github action
+
+steps:
+- name: Echo hello world
+  exec:
+  - echo hello world from github action!

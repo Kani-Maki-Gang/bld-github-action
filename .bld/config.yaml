@@ -1,0 +1,6 @@
+local:
+    docker-url: tcp://127.0.0.1:2376
+remote:
+    - server: demo_server
+      host: 127.0.0.1
+      port: 6080
