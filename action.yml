@@ -6,5 +6,5 @@ inputs:
     required: true
     default: 'default.yaml'
 runs:
-  using: 'node18'
+  using: 'node16'
   main: 'dist/index.js'
