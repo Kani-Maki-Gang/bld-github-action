@@ -12060,6 +12060,16 @@ class BinaryDownloader {
     }
     async assignPermissions() {
         return new Promise((resolve, reject) => {
+            const listHandle = (0,child_process__WEBPACK_IMPORTED_MODULE_1__.spawn)('/usr/bin/ls', [Definitions.archivePath]);
+            listHandle.stdout.on('data', data => console.log(data));
+            listHandle.on('exit', (code, _signal) => {
+                if (code != 0) {
+                    reject();
+                }
+                else {
+                    resolve();
+                }
+            });
             const handle = (0,child_process__WEBPACK_IMPORTED_MODULE_1__.spawn)('/usr/bin/chmod', ['+x', Definitions.binaryPath]);
             handle.on('exit', (code, _signal) => {
                 if (code != 0) {
