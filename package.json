@@ -7,7 +7,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc",
-    "start": "tsc && node ./dist/index.js"
+    "start": "tsc && node ./dist/index.js",
+    "build-prod": "ncc build ./src/index.ts"
   },
   "repository": {
     "type": "git",
@@ -29,6 +30,7 @@
   "devDependencies": {
     "@types/node": "^18.14.1",
     "@types/tar-fs": "^2.0.1",
+    "@vercel/ncc": "^0.36.1",
     "typescript": "^4.9.5"
   }
 }
