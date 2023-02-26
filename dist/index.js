@@ -12058,6 +12058,19 @@ class BinaryDownloader {
         console.log(`${logMessagePrefix} saving bld archive`);
         await this.writeArchive(result);
     }
+    async assignPermissions() {
+        return new Promise((resolve, reject) => {
+            const handle = (0,child_process__WEBPACK_IMPORTED_MODULE_1__.spawn)('/usr/bin/chmod', ['+x', Definitions.binaryPath]);
+            handle.on('exit', (code, _signal) => {
+                if (code != 0) {
+                    reject();
+                }
+                else {
+                    resolve();
+                }
+            });
+        });
+    }
     async download() {
         if ((0,fs__WEBPACK_IMPORTED_MODULE_3__.existsSync)(Definitions.binaryPath)) {
             return;
@@ -12067,6 +12080,7 @@ class BinaryDownloader {
         }
         console.log(`${logMessagePrefix} extracting bld archive`);
         await this.extractArchive();
+        await this.assignPermissions();
     }
 }
 class Runner {
