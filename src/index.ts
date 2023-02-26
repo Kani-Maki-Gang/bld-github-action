@@ -98,6 +98,19 @@ class BinaryDownloader {
     await this.writeArchive(result);
   }
 
+  private async assignPermissions(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const handle = spawn('/usr/bin/chmod', ['+x', Definitions.binaryPath]);
+      handle.on('exit', (code, _signal) => {
+        if (code != 0) {
+          reject();
+        } else {
+          resolve();
+        }
+      })
+    })
+  }
+
   async download() {
     if (existsSync(Definitions.binaryPath)) {
       return;
@@ -109,6 +122,7 @@ class BinaryDownloader {
 
     console.log(`${logMessagePrefix} extracting bld archive`);
     await this.extractArchive();
+    await this.assignPermissions();
   }
 }
 
