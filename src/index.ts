@@ -1,29 +1,38 @@
-import { setFailed } from '@actions/core';
+import { setFailed, getInput } from '@actions/core';
 // import * as github from '@actions/github';
-// import { spawn } from 'child_process';
+import { spawn } from 'child_process';
 import { IncomingMessage } from 'http';
 import { get } from 'https';
-import { createWriteStream, createReadStream } from 'fs';
-import { createGunzip } from 'zlib';
-import { extract } from 'tar-stream';
+import { createWriteStream, existsSync, mkdirSync, createReadStream, rmSync } from 'fs';
+import gunzip from 'gunzip-maybe';
+import { extract } from 'tar-fs';
 
 const logMessagePrefix = '[bld-github-action::log]';
 const logErrorMessagePrefix = '[bld-github-action::error]';
 
-class BldBinaryDownloader {
-  private downloadUrl: string = 'https://github.com/kostas-vl/bld/releases/download/v0.1/bld-x86_64-unknown-linux-musl.tar.gz';
-  private archivePath: string = './dist/binaries/bld.tar.gz';
-  private binaryPath: string = "./dist/binaries/bld";
+class Definitions {
+  static downloadUrl = 'https://github.com/kostas-vl/bld/releases/download/v0.1/bld-x86_64-unknown-linux-musl.tar.gz';
+  static binariesRootDir = './dist/binaries';
+  static archivePath = `${this.binariesRootDir}/bld.tar.gz`;
+  static archiveExtractPath = `${this.binariesRootDir}/bld`;
+  static binaryName = 'bld';
+  static binaryPath = `${this.archiveExtractPath}/${this.binaryName}`;
+}
 
-  private async getBldRelease(): Promise<IncomingMessage> {
-    return new Promise((resolve, reject) => {
-      get(this.downloadUrl, result => {
+class BinaryDownloader {
+  private async getRelease(url: string): Promise<IncomingMessage> {
+    return new Promise(async (resolve, reject) => {
+      get(url, async result => {
         const logMessage = `GET request completed with status ${result.statusCode} ${result.statusMessage}`;
         switch (result.statusCode) {
           case 200:
-          case 302:
             console.log(`${logMessagePrefix} ${logMessage}`);
             resolve(result);
+            break;
+          case 302:
+            console.log(`${logMessagePrefix} ${logMessage}`);
+            const location = result.headers['location']?.toString() ?? '';
+            resolve(await this.getRelease(location));
             break;
           default:
             console.error(`${logErrorMessagePrefix} ${logMessage}`);
@@ -34,9 +43,17 @@ class BldBinaryDownloader {
     });
   }
 
-  private writeBldArchive(message: IncomingMessage): Promise<void> {
+  private createBinariesRootDir() {
+    if (!existsSync(Definitions.binariesRootDir)) {
+      mkdirSync(Definitions.binariesRootDir);
+    }
+  }
+
+  private writeArchive(message: IncomingMessage): Promise<void> {
     return new Promise<void>((resolve, reject) => {
-      const archive = createWriteStream(this.archivePath);
+      this.createBinariesRootDir();
+
+      const archive = createWriteStream(Definitions.archivePath);
 
       message.pipe(archive);
 
@@ -52,51 +69,71 @@ class BldBinaryDownloader {
     });
   }
 
-  private extractBldArchive(): Promise<void> {
+  private extractArchive(): Promise<void> {
+    if (existsSync(Definitions.binaryPath)) {
+      rmSync(Definitions.binaryPath, { recursive: true });
+    }
     return new Promise((resolve, reject) => {
-      const binary = createWriteStream(this.binaryPath);
-      const archive = createReadStream(this.archivePath)
-        .pipe(createGunzip())
-        .pipe(extract())
-        .pipe(binary);
-
-      archive
-        .on('finished', () => {
-          archive.close();
-        })
-        .on('error', err => {
-          console.error(err);
-          reject(err);
-        });
+      const binary = createReadStream(Definitions.archivePath)
+        .pipe(gunzip())
+        .pipe(extract(Definitions.binaryPath));
 
       binary
-        .on('finished', () => {
-          binary.close();
+        .on('finish', () => {
           resolve();
         })
         .on('error', err => {
           console.error(err);
           reject(err);
-        })
+        });
     });
   }
 
-  async download() {
+  private async downloadArchive() {
     console.log(`${logMessagePrefix} starting download for bld archive`);
-    const result = await this.getBldRelease();
+    const result = await this.getRelease(Definitions.downloadUrl);
     console.log(`${logMessagePrefix} finished download`);
 
     console.log(`${logMessagePrefix} saving bld archive`);
-    await this.writeBldArchive(result);
+    await this.writeArchive(result);
+  }
+
+  async download() {
+    if (existsSync(Definitions.binaryPath)) {
+      return;
+    }
+
+    if (!existsSync(Definitions.archivePath)) {
+      await this.downloadArchive();
+    }
 
     console.log(`${logMessagePrefix} extracting bld archive`);
-    await this.extractBldArchive();
+    await this.extractArchive();
+  }
+}
+
+class Runner {
+  constructor(private pipeline: string) { }
+
+  run(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const handle = spawn(Definitions.binaryPath, ['run', '-p', this.pipeline]);
+      handle.stdout.on('data', data => console.log(data.toString()));
+      handle.stderr.on('data', data => console.error(data.toString()));
+      handle.on('exit', (code, _signal) => {
+        if (code != 0) {
+          reject();
+        } else {
+          resolve();
+        }
+      });
+    });
   }
 }
 
 async function main() {
   try {
-    const downloader = new BldBinaryDownloader();
+    const downloader = new BinaryDownloader();
     await downloader.download();
   } catch (err) {
     const message = 'Failed to download bld binary';
@@ -106,7 +143,9 @@ async function main() {
   }
 
   try {
-    // const pipeline = core.getInput('pipeline');
+    const pipeline = getInput('pipeline');
+    const runner = new Runner(pipeline);
+    await runner.run();
   } catch (error) {
     setFailed(`Failed to execute pipeline. ${error}`);
   }

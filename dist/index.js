@@ -1,25 +1,37 @@
-import { setFailed } from '@actions/core';
+var _a;
+import { setFailed, getInput } from '@actions/core';
+// import * as github from '@actions/github';
+import { spawn } from 'child_process';
 import { get } from 'https';
-import { createWriteStream, createReadStream } from 'fs';
-import { createGunzip } from 'zlib';
-import { extract } from 'tar-stream';
+import { createWriteStream, existsSync, mkdirSync, createReadStream, rmSync } from 'fs';
+import gunzip from 'gunzip-maybe';
+import { extract } from 'tar-fs';
 const logMessagePrefix = '[bld-github-action::log]';
 const logErrorMessagePrefix = '[bld-github-action::error]';
-class BldBinaryDownloader {
-    constructor() {
-        this.downloadUrl = 'https://github.com/kostas-vl/bld/releases/download/v0.1/bld-x86_64-unknown-linux-musl.tar.gz';
-        this.archivePath = './dist/binaries/bld.tar.gz';
-        this.binaryPath = "./dist/binaries/bld";
-    }
-    async getBldRelease() {
-        return new Promise((resolve, reject) => {
-            get(this.downloadUrl, result => {
+class Definitions {
+}
+_a = Definitions;
+Definitions.downloadUrl = 'https://github.com/kostas-vl/bld/releases/download/v0.1/bld-x86_64-unknown-linux-musl.tar.gz';
+Definitions.binariesRootDir = './dist/binaries';
+Definitions.archivePath = `${_a.binariesRootDir}/bld.tar.gz`;
+Definitions.archiveExtractPath = `${_a.binariesRootDir}/bld`;
+Definitions.binaryName = 'bld';
+Definitions.binaryPath = `${_a.archiveExtractPath}/${_a.binaryName}`;
+class BinaryDownloader {
+    async getRelease(url) {
+        return new Promise(async (resolve, reject) => {
+            get(url, async (result) => {
+                var _b, _c;
                 const logMessage = `GET request completed with status ${result.statusCode} ${result.statusMessage}`;
                 switch (result.statusCode) {
                     case 200:
-                    case 302:
                         console.log(`${logMessagePrefix} ${logMessage}`);
                         resolve(result);
+                        break;
+                    case 302:
+                        console.log(`${logMessagePrefix} ${logMessage}`);
+                        const location = (_c = (_b = result.headers['location']) === null || _b === void 0 ? void 0 : _b.toString()) !== null && _c !== void 0 ? _c : '';
+                        resolve(await this.getRelease(location));
                         break;
                     default:
                         console.error(`${logErrorMessagePrefix} ${logMessage}`);
@@ -29,9 +41,15 @@ class BldBinaryDownloader {
             });
         });
     }
-    writeBldArchive(message) {
+    createBinariesRootDir() {
+        if (!existsSync(Definitions.binariesRootDir)) {
+            mkdirSync(Definitions.binariesRootDir);
+        }
+    }
+    writeArchive(message) {
         return new Promise((resolve, reject) => {
-            const archive = createWriteStream(this.archivePath);
+            this.createBinariesRootDir();
+            const archive = createWriteStream(Definitions.archivePath);
             message.pipe(archive);
             archive
                 .on('finish', () => {
@@ -44,24 +62,16 @@ class BldBinaryDownloader {
             });
         });
     }
-    extractBldArchive() {
+    extractArchive() {
+        if (existsSync(Definitions.binaryPath)) {
+            rmSync(Definitions.binaryPath, { recursive: true });
+        }
         return new Promise((resolve, reject) => {
-            const binary = createWriteStream(this.binaryPath);
-            const archive = createReadStream(this.archivePath)
-                .pipe(createGunzip())
-                .pipe(extract())
-                .pipe(binary);
-            archive
-                .on('finished', () => {
-                archive.close();
-            })
-                .on('error', err => {
-                console.error(err);
-                reject(err);
-            });
+            const binary = createReadStream(Definitions.archivePath)
+                .pipe(gunzip())
+                .pipe(extract(Definitions.binaryPath));
             binary
-                .on('finished', () => {
-                binary.close();
+                .on('finish', () => {
                 resolve();
             })
                 .on('error', err => {
@@ -70,19 +80,47 @@ class BldBinaryDownloader {
             });
         });
     }
-    async download() {
+    async downloadArchive() {
         console.log(`${logMessagePrefix} starting download for bld archive`);
-        const result = await this.getBldRelease();
+        const result = await this.getRelease(Definitions.downloadUrl);
         console.log(`${logMessagePrefix} finished download`);
         console.log(`${logMessagePrefix} saving bld archive`);
-        await this.writeBldArchive(result);
+        await this.writeArchive(result);
+    }
+    async download() {
+        if (existsSync(Definitions.binaryPath)) {
+            return;
+        }
+        if (!existsSync(Definitions.archivePath)) {
+            await this.downloadArchive();
+        }
         console.log(`${logMessagePrefix} extracting bld archive`);
-        await this.extractBldArchive();
+        await this.extractArchive();
+    }
+}
+class Runner {
+    constructor(pipeline) {
+        this.pipeline = pipeline;
+    }
+    run() {
+        return new Promise((resolve, reject) => {
+            const handle = spawn(Definitions.binaryPath, ['run', '-p', this.pipeline]);
+            handle.stdout.on('data', data => console.log(data.toString()));
+            handle.stderr.on('data', data => console.error(data.toString()));
+            handle.on('exit', (code, _signal) => {
+                if (code != 0) {
+                    reject();
+                }
+                else {
+                    resolve();
+                }
+            });
+        });
     }
 }
 async function main() {
     try {
-        const downloader = new BldBinaryDownloader();
+        const downloader = new BinaryDownloader();
         await downloader.download();
     }
     catch (err) {
@@ -92,7 +130,9 @@ async function main() {
         return;
     }
     try {
-        // const pipeline = core.getInput('pipeline');
+        const pipeline = getInput('pipeline');
+        const runner = new Runner(pipeline);
+        await runner.run();
     }
     catch (error) {
         setFailed(`Failed to execute pipeline. ${error}`);
