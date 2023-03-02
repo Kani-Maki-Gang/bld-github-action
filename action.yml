@@ -1,10 +1,19 @@
 name: 'Bld github action'
 description: 'Run Bld pipelines from github workflows'
 inputs:
+  server:
+    description: 'The name of the server where the pipeline should run'
+    required: false
   pipeline:
     description: 'The bld pipeline to run'
     required: true
     default: 'default.yaml'
+  variables:
+    descirption: 'The variables for the pipeline'
+    required: false
+  environment:
+    description: 'Tne environment variables for the pipeline'
+    required: false
 runs:
   using: 'node16'
   main: 'dist/index.js'

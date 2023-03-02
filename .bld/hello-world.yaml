@@ -2,7 +2,11 @@ version: 1
 runs_on: machine
 name: Sample pipeline for github action
 
+variables:
+  var1: goodnight
+  var2: planet
+
 steps:
 - name: Echo hello world
   exec:
-  - echo hello world from github action!
+  - echo bld:var:var1 bld:var:var2 from github action!
