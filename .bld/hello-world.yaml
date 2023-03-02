@@ -1,5 +1,5 @@
 version: 1
-runs_on: ubuntu
+runs_on: machine
 name: Sample pipeline for github action
 
 steps:
