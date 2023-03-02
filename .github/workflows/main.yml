@@ -16,4 +16,4 @@ jobs:
           pipeline: 'hello-world.yaml'
       # Use the output from the `hello` step
       - name: Get the output time
-        run: echo steps.hello.outputs.time
+        run: echo ${{ steps.hello.outputs.time }}

@@ -5,10 +5,9 @@
   "main": "dist/index.js",
   "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tsc",
-    "start": "tsc && node ./dist/index.js",
-    "build-prod": "ncc build ./src/index.ts"
+    "build": "ncc build ./src/index.ts",
+    "start": "ncc build ./src/index.ts && act",
+    "build-prod": "ncc build ./src/index.ts -m"
   },
   "repository": {
     "type": "git",
@@ -23,13 +22,13 @@
   "dependencies": {
     "@actions/core": "^1.10.0",
     "@actions/github": "^5.1.1",
-    "@types/gunzip-maybe": "^1.4.0",
     "gunzip-maybe": "^1.4.2",
     "tar-fs": "^2.1.1"
   },
   "devDependencies": {
     "@types/node": "^18.14.1",
     "@types/tar-fs": "^2.0.1",
+    "@types/gunzip-maybe": "^1.4.0",
     "@vercel/ncc": "^0.36.1",
     "typescript": "^4.9.5"
   }
