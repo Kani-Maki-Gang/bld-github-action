@@ -22,13 +22,10 @@
   "dependencies": {
     "@actions/core": "^1.10.0",
     "@actions/github": "^5.1.1",
-    "gunzip-maybe": "^1.4.2",
-    "tar-fs": "^2.1.1"
+    "@actions/tool-cache": "^2.0.1"
   },
   "devDependencies": {
     "@types/node": "^18.14.1",
-    "@types/tar-fs": "^2.0.1",
-    "@types/gunzip-maybe": "^1.4.0",
     "@vercel/ncc": "^0.36.1",
     "typescript": "^4.9.5"
   }

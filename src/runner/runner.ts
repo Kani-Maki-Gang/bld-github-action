@@ -1,4 +1,3 @@
-// import { error } from "@actions/core";
 import { debug } from "@actions/core";
 import { spawn } from "child_process";
 import { Definitions } from "src/base/definitions";
@@ -49,7 +48,7 @@ export class Runner {
     return new Promise((resolve, reject) => {
       debug(`starting run for pipeline: ${this.pipeline}`);
       const args = this.getArguments();
-      const handle = spawn(`${Definitions.binaryPath}/bld`, args);
+      const handle = spawn(Definitions.binaryName, args);
       handle.stdout.on('data', data => console.log(data.toString()));
       handle.stderr.on('data', data => console.log(data.toString()));
       handle.on('exit', (code, _signal) => {
