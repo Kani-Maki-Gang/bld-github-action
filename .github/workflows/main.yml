@@ -13,7 +13,7 @@ jobs:
         uses: ./ # Uses an action in the root directory
         id: bld-github-action-hello
         with:
-          pipeline: 'hello-world.yaml'
+          pipeline: 'default.yaml'
           variables: |-
             var1=Hi
             var2=observer

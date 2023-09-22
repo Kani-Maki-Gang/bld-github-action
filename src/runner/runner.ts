@@ -62,7 +62,6 @@ export class Runner {
   async run() {
     debug(`starting run for pipeline: ${this.pipeline}`);
     const args = this.getArguments();
-    await this.spawn("docker", ["ps", "-a"]);
     await this.spawn(Definitions.binaryName, args);
   }
 }
