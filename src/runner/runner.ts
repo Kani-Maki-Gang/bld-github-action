@@ -44,11 +44,9 @@ export class Runner {
     return args;
   }
 
-  run(): Promise<void> {
+  spawn(binary: string, args: string[] | undefined): Promise<void> {
     return new Promise((resolve, reject) => {
-      debug(`starting run for pipeline: ${this.pipeline}`);
-      const args = this.getArguments();
-      const handle = spawn(Definitions.binaryName, args);
+      const handle = spawn(binary, args);
       handle.stdout.on('data', data => console.log(data.toString()));
       handle.stderr.on('data', data => console.log(data.toString()));
       handle.on('exit', (code, _signal) => {
@@ -58,7 +56,14 @@ export class Runner {
           resolve();
         }
       });
-    });
+    })
+  }
+
+  async run() {
+    debug(`starting run for pipeline: ${this.pipeline}`);
+    const args = this.getArguments();
+    await this.spawn("docker", ["ps", "-a"]);
+    await this.spawn(Definitions.binaryName, args);
   }
 }
 
