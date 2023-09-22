@@ -1,4 +1,4 @@
-name: 'bld'
+name: 'bld-action'
 description: 'Run Bld pipelines from github workflows'
 inputs:
   server:
