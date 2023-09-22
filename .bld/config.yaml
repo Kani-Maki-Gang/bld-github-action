@@ -1,2 +1,2 @@
 local:
-    docker-url: unix://var/run/docker.sock
+    docker_url: unix://var/run/docker.sock
