@@ -1,5 +1,7 @@
 name: 'bld'
 description: 'Run Bld pipelines from github workflows'
+env:
+  DOCKER_HOST: tcp://127.0.0.1:2377
 inputs:
   server:
     description: 'The name of the server where the pipeline should run'
@@ -17,5 +19,4 @@ inputs:
 runs:
   using: 'node16'
   main: 'dist/index.js'
-  env:
-    DOCKER_HOST: tcp://127.0.0.1:2377
+
