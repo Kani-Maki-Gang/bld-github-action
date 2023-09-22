@@ -1,12 +1,13 @@
-version: 1
-runs_on: machine
+version: 2
 name: Sample pipeline for github action
+runs_on:
+  image: ubuntu:latest
+  pull: true
 
 variables:
   var1: goodnight
   var2: planet
 
-steps:
-- name: Echo hello world
-  exec:
-  - echo bld:var:var1 bld:var:var2 from github action!
+jobs:
+  main:
+  - echo ${{var1}} ${{var2}} from github action!

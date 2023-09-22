@@ -17,3 +17,5 @@ inputs:
 runs:
   using: 'node16'
   main: 'dist/index.js'
+  env:
+    DOCKER_HOST: tcp://127.0.0.1:2377
