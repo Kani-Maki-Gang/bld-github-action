@@ -9,12 +9,12 @@ inputs:
     required: true
     default: 'default.yaml'
   variables:
-    descirption: 'The variables for the pipeline'
+    description: 'The variables for the pipeline'
     required: false
   environment:
     description: 'Tne environment variables for the pipeline'
     required: false
 runs:
-  using: 'node16'
+  using: 'node20'
   main: 'dist/index.js'
 
